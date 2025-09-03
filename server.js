@@ -59,11 +59,7 @@ app.prepare().then(() => {
             onCall(participants);
         });
 
-        socket.on('end',(participants) => {
-            console.log('Call end event recieved on server: ', participants);
-            onEnded(participants);
-        })
-
+    
     });
 
     httpServer

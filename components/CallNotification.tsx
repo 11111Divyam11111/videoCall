@@ -11,7 +11,7 @@ const CallNotification = () => {
       <div className="flex justify-center">
         <div className="flex w-1/5 flex-col bg-slate-500 bg-opacity-70 flex items-center justify-center">        
         <p>someone is calling</p>
-        <button onClick={handleEndCall}>End Call</button>
+        <button>End Call</button>
         <button>Pick Up Call</button>
         </div>
       </div>
