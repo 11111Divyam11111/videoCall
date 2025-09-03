@@ -13,6 +13,7 @@ interface iSocketContext {
   onlineUsers: SocketUser[] | null;
   ongoingCall : OngoingCall | null;
   handleCall: (user: SocketUser) => void;
+  handleEndCall : OngoingCall;
 }
 
 export const SocketContext = createContext<iSocketContext | null>(null);
@@ -27,6 +28,7 @@ export const SocketContextProvider = ({
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<SocketUser[] | null>(null);
   const [ongoingCall, setOngoingCall] = useState<OngoingCall | null>(null);
+
 
   console.log("online users >> ", onlineUsers);
 
@@ -57,6 +59,33 @@ export const SocketContextProvider = ({
     },
     [user, socket, ongoingCall]
   );
+
+  const handleEndCall = useCallback(
+    (user:SocketUser)=>{
+        if(!currentSocketUser || !socket) return;
+        const participants = { caller: currentSocketUser, receiver: user };
+        console.log("Ending call",participants);
+        setOngoingCall({
+            participants,
+            isRinging : false,
+        });
+        socket.emit('end',participants);
+    },
+    [socket , currentSocketUser , ongoingCall]
+  )
+
+  const onCallBandKarde = useCallback(() => {
+    if (!socket || !ongoingCall || !currentSocketUser) return;
+
+    const { caller } = ongoingCall.participants;
+
+    // Remove local notification
+    setOngoingCall(null);
+
+    // Notify the caller
+    socket.emit("end", { caller, receiver: currentSocketUser });
+}, [socket, ongoingCall, currentSocketUser]);
+
 
   // initialising a socket
   useEffect(() => {
@@ -122,8 +151,16 @@ export const SocketContextProvider = ({
     };
   }, [socket, isConnected, user, onIncomingCall]);
 
+  useEffect(()=>{
+    if (!socket || !isConnected) return;
+    socket.on("callBandKarde",onCallBandKarde);
+    return () => {
+        socket.off("callBandKarde",onCallBandKarde);
+    }
+  })
+
   return (
-    <SocketContext.Provider value={{ onlineUsers, handleCall ,ongoingCall}}>
+    <SocketContext.Provider value={{ onlineUsers, handleCall ,ongoingCall , handleEndCall}}>
       {children}
     </SocketContext.Provider>
   );

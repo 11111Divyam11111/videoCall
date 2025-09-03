@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 import onCall from "./socket-events/onCall.js";
+import onEnded from "./socket-events/onEnded.js";
+
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -56,6 +58,11 @@ app.prepare().then(() => {
             console.log("📡 Call event received on server:", participants); // ✅ log
             onCall(participants);
         });
+
+        socket.on('end',(participants) => {
+            console.log('Call end event recieved on server: ', participants);
+            onEnded(participants);
+        })
 
     });
 

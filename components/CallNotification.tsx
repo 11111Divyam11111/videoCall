@@ -3,13 +3,17 @@
 import { useSocket } from "@/context/socketContext";
 
 const CallNotification = () => {
-  const { ongoingCall } = useSocket();
+  const { ongoingCall , handleEndCall } = useSocket();
 
   if (!ongoingCall?.isRinging) return null;
   else {
     return (
-      <div className="absolute bg-slate-500 w-screen bg-opacity-70 h-screen top-0 bottom-0 flex items-center justify-center">
-        someone is calling
+      <div className="flex justify-center">
+        <div className="flex w-1/5 flex-col bg-slate-500 bg-opacity-70 flex items-center justify-center">        
+        <p>someone is calling</p>
+        <button onClick={handleEndCall}>End Call</button>
+        <button>Pick Up Call</button>
+        </div>
       </div>
     );
   }
