@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 import onCall from "./socket-events/onCall.js";
-
+import onWebRTCSignal from './socket-events/onWebRTCSignal.js';
 
 
 const dev = process.env.NODE_ENV !== "production";
@@ -58,6 +58,8 @@ app.prepare().then(() => {
             console.log("📡 Call event received on server:", participants); // ✅ log
             onCall(participants);
         });
+
+        socket.on('webRTCSignal',onWebRTCSignal)
 
     
     });

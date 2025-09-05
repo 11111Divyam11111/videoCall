@@ -16,6 +16,7 @@ interface iSocketContext {
     handleCall: (user: SocketUser) => void;
     localStream: MediaStream | null;
     handleJoin: (ongoingCall: OngoingCall) => void;
+    peer : PeerData | null;
 }
 
 export const SocketContext = createContext<iSocketContext | null>(null);
@@ -55,7 +56,6 @@ export const SocketContextProvider = ({
                     width: { min: 640, ideal: 1280, max: 1920 },
                     height: { min: 360, ideal: 720, max: 1080 },
                     frameRate: { min: 16, ideal: 30, max: 30 },
-                    facingMode: videoDevices.length > 0 ? faceMode : undefined
                 }
             });
             setLocalStream(stream);
@@ -132,16 +132,48 @@ export const SocketContextProvider = ({
         peer.on('close', () => handleHangUp({}));
 
 
-        const rtcPeerConnection:RTCPeerConnection = (peer as any)._pc
+        const rtcPeerConnection: RTCPeerConnection = (peer as any)._pc
 
-        rtcPeerConnection.oniceconnectionstatechange = async() =>{
-            if(rtcPeerConnection.iceConnectionState == 'disconnected' || rtcPeerConnection.iceConnectionState == 'failed'){
+        rtcPeerConnection.oniceconnectionstatechange = async () => {
+            if (rtcPeerConnection.iceConnectionState == 'disconnected' || rtcPeerConnection.iceConnectionState == 'failed') {
                 handleHangUp({});
             }
         }
-        
+
         return peer
     }, [ongoingCall, setPeer]);
+
+    const completePeerConnection = useCallback(async (connectionData: { sdp: SignalData, ongoingCall: OngoingCall, isCaller: boolean }) => {
+        if (!localStream) {
+            console.log('missing stream');
+            return;
+        }
+
+        if(peer){
+            peer.peerConnection?.signal(connectionData.sdp)
+            return
+        }
+
+        const newPeer = createPeer(localStream, true)
+        setPeer({
+            peerConnection: newPeer,
+            participantUser: connectionData.ongoingCall.participants.receiver,
+            stream: undefined
+        })
+
+        newPeer.on('signal', async (data: SignalData) => {
+            if (socket) {
+                console.log('emit offer');
+                socket.emit('webRTCSignal', {
+                    sdp: data,
+                    ongoingCall,
+                    isCaller: true
+                })
+            }
+        })
+
+
+    }, [localStream, createPeer, peer, ongoingCall])
 
     const handleJoin = useCallback(async (ongoingCall: OngoingCall) => {
         // join call
@@ -160,20 +192,20 @@ export const SocketContextProvider = ({
             return
         }
 
-        const newPeer = createPeer(stream,true)
+        const newPeer = createPeer(stream, true)
         setPeer({
-            peerConnection : newPeer,
-            participantUser : ongoingCall.participants.caller,
-            stream : undefined
+            peerConnection: newPeer,
+            participantUser: ongoingCall.participants.caller,
+            stream: undefined
         })
 
-        newPeer.on('signal' , async (data : SignalData) => {
-            if(socket){
+        newPeer.on('signal', async (data: SignalData) => {
+            if (socket) {
                 console.log('emit offer');
-                socket.emit('webRTCSignal',{
-                    sdp : data,
+                socket.emit('webRTCSignal', {
+                    sdp: data,
                     ongoingCall,
-                    isCaller : false
+                    isCaller: false
                 })
             }
         })
@@ -238,13 +270,17 @@ export const SocketContextProvider = ({
     useEffect(() => {
         if (!socket || !isConnected) return;
         socket.on("incomingCall", onIncomingCall);
+        socket.on("webRTCSignal", completePeerConnection);
+
         return () => {
             socket.off("incomingCall", onIncomingCall);
+            socket.off("webRTCSignal", completePeerConnection);
         };
-    }, [socket, isConnected, user, onIncomingCall]);
+
+    }, [socket, isConnected, user, onIncomingCall,completePeerConnection]);
 
     return (
-        <SocketContext.Provider value={{ onlineUsers, handleCall, ongoingCall, localStream, handleJoin }}>
+        <SocketContext.Provider value={{ onlineUsers, handleCall, ongoingCall, localStream, handleJoin , peer }}>
             {children}
         </SocketContext.Provider>
     );
