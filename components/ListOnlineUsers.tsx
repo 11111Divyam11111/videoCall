@@ -8,7 +8,7 @@ const ListOnlineUsers = () => {
   const { onlineUsers , handleCall} = useSocket();
 
   return (
-    <div className="flex justify-start border-b border-b-primary/10 w-full items-center pb-2">
+    <div className="flex justify-start border-b border-b-primary/10 w-full items-center p-2 space-x-3">
       {onlineUsers &&
         onlineUsers.map((online) => {
           if (online.profile.id == user?.id) return null;

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MdMic, MdMicOff, MdVideoCall, MdVideocam, MdVideocamOff } from "react-icons/md";
 
 const VideoCall = () => {
-    const { localStream, peer, ongoingCall } = useSocket();
+    const { localStream, peer, ongoingCall, handleHangUp, isCallEnded } = useSocket();
     const [isMicOn, setIsMicOn] = useState(true);
     const [isVidOn, setIsVidOn] = useState(true);
 
@@ -37,22 +37,30 @@ const VideoCall = () => {
 
     const isOnCall = localStream && peer && ongoingCall ? true : false;
 
+    if (isCallEnded) {
+        return (
+        <div className="mt-10 flex items-center justify-center ">
+            <p className="p-3 bg-rose-500 text-white rounded-md">Call Ended</p>
+        </div>);
+    }
+
+    if (!localStream && !peer) return
 
     return (
         <>
-            <div className="mt-4 relative ">
+            <div className="mt-4 relative flex items-left justify-center">
                 {localStream && <VideoContainer stream={localStream} isLocalStream={true} isOnCall={isOnCall} />}
                 {
                     peer && peer.stream && <VideoContainer stream={peer?.stream} isLocalStream={false} isOnCall={isOnCall} />
                 }
             </div>
 
-            <div className="mt-8 space-x-2 flex items-center">
+            <div className="mt-8 space-x-2 flex items-center justify-center">
                 <button onClick={toggleAudio} className="rounded-full bg-gray-300 p-2">
                     {isMicOn && <MdMic size={28} />}
                     {!isMicOn && <MdMicOff size={28} />}
                 </button>
-                <button className="px-4 py-2 bg-rose-500 text-white rounded-md">
+                <button className="px-4 py-2 bg-rose-500 text-white rounded-md" onClick={() => handleHangUp({ ongoingCall: ongoingCall ? ongoingCall : undefined, isEmitHangup: true })}>
                     End Call
                 </button>
                 <button onClick={toggleVideo} className="rounded-full bg-gray-300 p-2">
